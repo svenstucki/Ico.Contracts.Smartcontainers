@@ -23,7 +23,7 @@ contract('LOGI voting sample', function(accounts) {
     };
 
     function waitTwoWeeks() {
-        const twoWeeks = 2 * 7 * 24 * 60 * 60;
+        const twoWeeks = 2 * 7 * 24 * 60 * 60 + 1;
         web3.currentProvider.send({ jsonrpc: "2.0", method: "evm_increaseTime", params: [twoWeeks], id: 0 })
     };
 

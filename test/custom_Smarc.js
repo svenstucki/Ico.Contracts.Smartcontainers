@@ -13,6 +13,8 @@ contract('SMARC', function(accounts) {
     const charles = accounts[3];
     const burnable = accounts[4];
 
+    const maxTokenSupply = 150*1000*1000;
+
     let smarcToken;
 
     function tokens(amount) {
@@ -44,13 +46,23 @@ contract('SMARC', function(accounts) {
             assert.isTrue(await smarcToken.transfersEnabled.call());
             assert.isTrue(await smarcToken.transfer.call(alice, tokens(1), { from: sid }))
         });
+
+        it('should allow maximum token supply', async () => {
+            await smarcToken.generateTokens(alice, tokens(maxTokenSupply - 100), { from: sid });
+            await smarcToken.finishMinting(burnable);
+        });
+
+        it('should enforce maximum token supply', async () => {
+            await smarcToken.generateTokens(alice, tokens(maxTokenSupply - 100 + 1), { from: sid });
+            await expectRevertOrFail(smarcToken.finishMinting(burnable));
+        });
     });
 
     describe('setLocks(_holders, _lockups)', function() {
         it('should lock funds', async function() {
             await smarcToken.generateTokens(alice, tokens(1), { from: sid });
 
-            let timeout = (Date.now() / 1000) + (60 * 60 * 24 * 31);
+            let timeout = web3.eth.getBlock(web3.eth.blockNumber).timestamp + (60 * 60 * 24 * 31);
 
             await smarcToken.setLocks([alice], [timeout], { from: sid });
             await smarcToken.finishMinting(burnable);
@@ -61,7 +73,7 @@ contract('SMARC', function(accounts) {
         it('should unlock funds after timeout', async function() {
             await smarcToken.generateTokens(alice, tokens(1), { from: sid });
 
-            let timeout = (Date.now() / 1000) + (60 * 60 * 24 * 31);
+            let timeout = web3.eth.getBlock(web3.eth.blockNumber).timestamp + (60 * 60 * 24 * 31);
 
             await smarcToken.setLocks([alice], [timeout], { from: sid });
             await smarcToken.finishMinting(burnable);
@@ -69,6 +81,14 @@ contract('SMARC', function(accounts) {
             waitOneMonth();
 
             assert.isTrue(await smarcToken.transfer.call(bob, tokens(1), { from: alice }))
+        });
+
+        it('should not be able to add locks after minting', async () => {
+            await smarcToken.generateTokens(alice, tokens(1), { from: sid });
+            await smarcToken.finishMinting(burnable);
+
+            let timeout = web3.eth.getBlock(web3.eth.blockNumber).timestamp + (60 * 60 * 24 * 31);
+            await expectRevertOrFail(smarcToken.setLocks([alice], [timeout], { from: sid }));
         });
     });
 

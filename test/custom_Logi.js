@@ -12,6 +12,8 @@ contract('LOGI', function(accounts) {
     const bob = accounts[2];
     const charles = accounts[3];
 
+    const maxTokenSupply = 100*1000*1000;
+
     let logiToken;
 
     function tokens(amount) {
@@ -43,13 +45,23 @@ contract('LOGI', function(accounts) {
             assert.isTrue(await logiToken.transfersEnabled.call());
             assert.isTrue(await logiToken.transfer.call(alice, tokens(1), { from: sid }))
         });
+
+        it('should allow maximum token supply', async () => {
+            await logiToken.generateTokens(alice, tokens(maxTokenSupply - 100), { from: sid });
+            await logiToken.finishMinting();
+        });
+
+        it('should enforce maximum token supply', async () => {
+            await logiToken.generateTokens(alice, tokens(maxTokenSupply - 100 + 1), { from: sid });
+            await expectRevertOrFail(logiToken.finishMinting());
+        });
     });
 
     describe('setLocks(_holders, _lockups)', function() {
         it('should lock funds', async function() {
             await logiToken.generateTokens(alice, tokens(1), { from: sid });
 
-            let timeout = (Date.now() / 1000) + (60 * 60 * 24 * 31);
+            let timeout = web3.eth.getBlock(web3.eth.blockNumber).timestamp + (60 * 60 * 24 * 31);
 
             await logiToken.setLocks([alice], [timeout], { from: sid });
             await logiToken.finishMinting();
@@ -60,7 +72,7 @@ contract('LOGI', function(accounts) {
         it('should unlock funds after timeout', async function() {
             await logiToken.generateTokens(alice, tokens(1), { from: sid });
 
-            let timeout = (Date.now() / 1000) + (60 * 60 * 24 * 31);
+            let timeout = web3.eth.getBlock(web3.eth.blockNumber).timestamp + (60 * 60 * 24 * 31);
 
             await logiToken.setLocks([alice], [timeout], { from: sid });
             await logiToken.finishMinting();
@@ -68,6 +80,14 @@ contract('LOGI', function(accounts) {
             waitOneMonth();
 
             assert.isTrue(await logiToken.transfer.call(bob, tokens(1), { from: alice }))
+        });
+
+        it('should not be able to add locks after minting', async () => {
+            await logiToken.generateTokens(alice, tokens(1), { from: sid });
+            await logiToken.finishMinting();
+
+            let timeout = web3.eth.getBlock(web3.eth.blockNumber).timestamp + (60 * 60 * 24 * 31);
+            await expectRevertOrFail(logiToken.setLocks([alice], [timeout], { from: sid }));
         });
     });
 });
