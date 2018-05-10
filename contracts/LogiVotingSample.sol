@@ -6,7 +6,7 @@ pragma solidity ^0.4.21;
  * Direct transferring of voting tokens is blocked, instead holders should use vote() method of current contract.
  * If user votes YES then all their voting tokens are transferred to the YES address.
  * Respectively, if user votes NO then all their voting tokens are transferred to the NO address.
- * After voting the balances of YES and NO addresses represent voting results. 
+ * After voting the balances of YES and NO addresses represent voting results.
  */
 
 import "./MiniMeToken.sol";
@@ -17,7 +17,6 @@ import "./Ownable.sol";
  * @title Logi voting sample
  */
 contract LogiVotingSample is TokenController, Ownable {
-    
     MiniMeToken public votingToken;
     address public yay;
     address public nay;
@@ -36,8 +35,8 @@ contract LogiVotingSample is TokenController, Ownable {
         votingToken = new MiniMeToken(
             _logi,                    // Logi
             _logiSnapshotBlock > 0 ?  // Logi snapshot block number
-                _logiSnapshotBlock : 
-                block.number,       
+                _logiSnapshotBlock :
+                block.number,
             "LogiVotingSampleToken",  // Token name
             18,                       // Same as Logi
             "LOGIV1",                 // Symbol
@@ -72,7 +71,7 @@ contract LogiVotingSample is TokenController, Ownable {
 
     /**
      * @notice Send `true` to vote for YES, otherwise send `false` for NO
-     * @param _vote The vote value 
+     * @param _vote The vote value
      */
     function vote(bool _vote) public {
         // ensure voting is running
